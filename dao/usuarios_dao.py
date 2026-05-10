@@ -1,14 +1,10 @@
-#acceso a datos de usuarios
-
 from database.conexion import ConexionDB
 from models.usuario import Usuario
 
 
 class UsuariosDAO:
 
-    # ---------------------------
-    # LISTAR TODOS
-    # ---------------------------
+    # LISTAR TODOS LOS USUARIOS
     def listar_todos(self):
         conn = ConexionDB.get_conexion()
         try:
@@ -19,9 +15,22 @@ class UsuariosDAO:
         finally:
             conn.close()
 
-    # ---------------------------
+    # LISTAR SOLO PRESTADORES
+    def listar_prestadores(self):
+        conn = ConexionDB.get_conexion()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, nombre, email, rol
+                FROM usuarios
+                WHERE rol = 'prestador'
+            """)
+            filas = cursor.fetchall()
+            return filas
+        finally:
+            conn.close()
+
     # CREAR USUARIO
-    # ---------------------------
     def crear(self, usuario):
         conn = ConexionDB.get_conexion()
         try:
@@ -34,15 +43,13 @@ class UsuariosDAO:
             conn.commit()
 
         except Exception as e:
-            conn.rollback()  # 🔥 importante si falla
+            conn.rollback()
             raise e
 
         finally:
-            conn.close()  # 🔥 SIEMPRE se ejecuta
+            conn.close()
 
-    # ---------------------------
-    # BUSCAR POR EMAIL
-    # ---------------------------
+    # BUSCAR POR EMAIL (CLAVE PARA LOGIN)
     def buscar_por_email(self, email):
         conn = ConexionDB.get_conexion()
         try:

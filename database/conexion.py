@@ -2,7 +2,7 @@ import sqlite3
 
 class ConexionDB:
 
-    DB_NAME = "BaseDeDatosPGC.db"
+    DB_NAME = "CONECTAPP.db"
 
     @staticmethod
     def get_conexion():

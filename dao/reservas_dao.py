@@ -1,17 +1,22 @@
 from database.conexion import ConexionDB
 from models.reserva import Reserva
+import sqlite3
 
 class ReservasDAO:
+    def __init__(self):
+        self.conexion =sqlite3.connect("CONECTAPP.db")
+        self.cursor = self.conexion.cursor()
 
     def agregar_reserva(self,reserva: Reserva):
         conn = ConexionDB.get_conexion()
         cursor = conn.cursor()
 
         cursor.execute("""
-        INSERT INTO reservas (servicio, fecha, hora, estado, cliente_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO reservas (servicio, prestador_id, fecha, hora, estado, cliente_id)
+        VALUES (?, ?, ?, ?, ?, ?)
         """, (
             reserva.servicio,
+            reserva.prestador_id,
             reserva.fecha, 
             reserva.hora, 
             reserva.estado, 
@@ -27,9 +32,10 @@ class ReservasDAO:
     
         cursor.execute("""
                        
-            SELECT id, servicio, fecha, hora, estado, cliente_id, calificada
+            SELECT id, servicio, prestador_id, fecha, hora, estado, cliente_id, calificada
             FROM reservas
             WHERE cliente_id = ?
+            ORDER BY fecha DESC
         """, (cliente_id,))
 
         filas = cursor.fetchall()
@@ -42,14 +48,34 @@ class ReservasDAO:
                 Reserva(
                     id=f[0],
                     servicio=f[1],
-                    fecha=f[2],
-                    hora=f[3],
-                    estado=f[4],
-                    cliente_id=f[5],
-                    calificada=bool(f[6])
+                    prestador_id=f[2],
+                    fecha=f[3],
+                    hora=f[4],
+                    estado=f[5],
+                    cliente_id=f[6],
+                    calificada=bool(f[7])
                 )
             )
         return reservas
+    
+    def obtener_por_prestador_y_fecha(self, prestador_id, fecha):
+
+        conn = self.conexion
+        cursor = conn.cursor()
+
+        query = """
+            SELECT hora
+            FROM reservas
+            WHERE prestador_id = ?
+            AND fecha = ?
+        """
+
+        cursor.execute(query, (prestador_id, fecha))
+
+        filas = cursor.fetchall()
+
+        # devolver solo lista de horas
+        return [f[0] for f in filas]
     
     def cancelar_reserva(self, id_reserva):
         conn =ConexionDB.get_conexion()

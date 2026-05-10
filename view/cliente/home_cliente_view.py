@@ -154,7 +154,7 @@ class HomeClienteView:
                                 weight="bold",
                                 color="white"
                             ),
-                            alignment=ft.alignment.Alignment(0, 0)   # ✅ centro
+                            alignment=ft.Alignment.CENTER   #centro
                         ),
 
                         # Campana en la esquina superior derecha
@@ -165,11 +165,11 @@ class HomeClienteView:
                                 icon_size=40,
                                 on_click=self.ver_notificaciones
                             ),
-                            alignment=ft.alignment.Alignment(1, -1)   # ✅ arriba derecha
+                            alignment=ft.Alignment.TOP_RIGHT,
+                            padding=10
                         )
                     ],
-                    width=800,   # ajusta al ancho de tu layout
-                    height=60    # altura del encabezado
+                    height=70
                 ),
 
                 # Pregunta centrada
@@ -183,6 +183,7 @@ class HomeClienteView:
                     ],
                     alignment=ft.MainAxisAlignment.CENTER
                 ),
+                
 
                 # Botones de acción
                 ft.Row(
@@ -201,14 +202,16 @@ class HomeClienteView:
                         ),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20
+                    spacing=15
                 )
             ],
             alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            expand=True,
-            spacing=25
+            horizontal_alignment=ft.CrossAxisAlignment.START,
+            spacing=30
         )
 
-        return layout
-
+        return ft.Container(
+            content=layout,
+            padding=ft.Padding(top=5,left=25,right=25),
+            #expand=True
+        )

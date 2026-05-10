@@ -17,17 +17,33 @@ def init_db():
 
     # Tabla de reservas
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS reservas (
+        CREATE TABLE IF NOT EXISTS reservas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        servicio TEXT NOT NULL,
+        cliente_id INTEGER NOT NULL,
+        prestador_id INTEGER NOT NULL,
         fecha TEXT NOT NULL,
         hora TEXT NOT NULL,
+        servicio TEXT NOT NULL,
         estado TEXT NOT NULL DEFAULT 'CONFIRMADA',
-        cliente_id INTEGER NOT NULL,
-        rating INTEGER,                --número de estrellas
-        comentario TEXT,               --comentario del cliente
-        calificada INTEGER DEFAULT 0,  --0 = no, 1 = sí
-        FOREIGN KEY (cliente_id) REFERENCES usuarios(id)
+
+        rating INTEGER,
+        comentario TEXT,
+        calificada INTEGER DEFAULT 0,
+
+        FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
+        FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
+    )
+    """)
+
+    # Tabla de horarios por prestador
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS horarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        prestador_id INTEGER NOT NULL,
+        fecha TEXT NOT NULL,
+        hora TEXT NOT NULL,
+        estado TEXT NOT NULL DEFAULT 'DISPONIBLE',
+        FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
     )
     """)
 

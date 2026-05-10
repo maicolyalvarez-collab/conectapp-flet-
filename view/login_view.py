@@ -34,37 +34,27 @@ def login_view(page: ft.Page):
             error_text.value = "Correo o contraseña incorrectos"
             page.update()
             return
-        page.usuario_actual = usuario
-        page.clean()
 
-        if not usuario:
-            error_text.value = "Correo o contraseña incorrectos"
-            page.update()
-            return
-        #redireccion segun el rol del usuario
-        page.clean()  # limpia la pantalla
+        # guardar usuario logueado
+        page.usuario_actual = usuario
+
+        # redirección por rol
+        page.clean()
 
         if usuario.rol == "admin":
             from view.admin.admin_view import HomeAdminView
-            
-            page.clean()
             page.add(HomeAdminView().build())
             page.update()
-        
+
         elif usuario.rol == "empleado":
             from view.empleado.empleado_view import HomeClienteView
-            
-            page.clean()
             page.add(HomeClienteView().build())
             page.update()
-        
+
         elif usuario.rol == "cliente":
             from view.cliente.home_cliente_view import HomeClienteView
-
-            page.clean()
-            page.add(HomeClienteView(page,usuario).build())
+            page.add(HomeClienteView(page, usuario).build())
             page.update()
-            
 
     #contenedor principal del login
     page.add(

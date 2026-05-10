@@ -5,7 +5,7 @@ from view.login_view import login_view
 
 def main(page: ft.Page):
 
-    page.title = "ADELANTO PGC"
+    page.title = "CONECTAPP"
     page.bgcolor = ft.Colors.BLACK
     page.vertical_alignment = "center"
     page.horizontal_alignment = "center"
