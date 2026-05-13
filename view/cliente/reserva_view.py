@@ -7,8 +7,9 @@ from dao.notificaciones_dao import NotificacionesDAO
 
 class ReservaView:
 
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, usuario_actual):
         self.page = page
+        self.usuario_actual = usuario_actual
 
         # estado del flujo
         self.paso = 1
@@ -95,15 +96,17 @@ class ReservaView:
     def ir_reservas(self, e):
         from view.cliente.gestionar_reserva_view import GestionarReservaView
 
-        self.page.clean()
-        self.page.add(GestionarReservaView(self.page, self.usuario_actual).build())
+        view = GestionarReservaView(self.page, self.usuario_actual)
+
+        self.page.controls.clear()
+        self.page.add(view.build())
         self.page.update()
         
     def volver(self, e):
         from view.cliente.home_cliente_view import HomeClienteView
 
         self.page.clean()
-        self.page.add(HomeClienteView(self.page).build())
+        self.page.add(HomeClienteView(self.page, self.usuario_actual).build())
         self.page.update()
 
     

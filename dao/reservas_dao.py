@@ -1,49 +1,65 @@
 from database.conexion import ConexionDB
 from models.reserva import Reserva
-import sqlite3
+from dao.calificaciones_dao import CalificacionesDAO
+
 
 class ReservasDAO:
+
     def __init__(self):
-        self.conexion =sqlite3.connect("CONECTAPP.db")
-        self.cursor = self.conexion.cursor()
 
-    def agregar_reserva(self,reserva: Reserva):
-        conn = ConexionDB.get_conexion()
-        cursor = conn.cursor()
+        self.conn = ConexionDB.get_conexion()
+        self.cursor = self.conn.cursor()
 
-        cursor.execute("""
-        INSERT INTO reservas (servicio, prestador_id, fecha, hora, estado, cliente_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+    # ---------------- AGREGAR RESERVA ----------------
+    def agregar_reserva(self, reserva: Reserva):
+
+        self.cursor.execute("""
+            INSERT INTO reservas (
+                servicio,
+                prestador_id,
+                fecha,
+                hora,
+                estado,
+                cliente_id,
+                comentario_reserva
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             reserva.servicio,
             reserva.prestador_id,
-            reserva.fecha, 
-            reserva.hora, 
-            reserva.estado, 
-            reserva.cliente_id
+            reserva.fecha,
+            reserva.hora,
+            reserva.estado,
+            reserva.cliente_id,
+            reserva.comentario_reserva
         ))
 
-        conn.commit()
-        conn.close()
-    
+        self.conn.commit()
+
+    # ---------------- OBTENER RESERVAS CLIENTE ----------------
     def obtener_reservas_por_cliente(self, cliente_id):
-        conn =ConexionDB.get_conexion()
-        cursor= conn.cursor()
-    
-        cursor.execute("""
-                       
-            SELECT id, servicio, prestador_id, fecha, hora, estado, cliente_id, calificada
+
+        self.cursor.execute("""
+            SELECT
+                id,
+                servicio,
+                prestador_id,
+                fecha,
+                hora,
+                estado,
+                cliente_id,
+                comentario_reserva
             FROM reservas
             WHERE cliente_id = ?
             ORDER BY fecha DESC
         """, (cliente_id,))
 
-        filas = cursor.fetchall()
-        conn.close()
+        filas = self.cursor.fetchall()
 
         reservas = []
 
         for f in filas:
+
             reservas.append(
                 Reserva(
                     id=f[0],
@@ -53,84 +69,92 @@ class ReservasDAO:
                     hora=f[4],
                     estado=f[5],
                     cliente_id=f[6],
-                    calificada=bool(f[7])
+                    comentario_reserva=f[7]
                 )
             )
+
         return reservas
-    
+
+    # ---------------- HORAS OCUPADAS ----------------
     def obtener_por_prestador_y_fecha(self, prestador_id, fecha):
 
-        conn = self.conexion
-        cursor = conn.cursor()
-
-        query = """
+        self.cursor.execute("""
             SELECT hora
             FROM reservas
             WHERE prestador_id = ?
             AND fecha = ?
-        """
+        """, (prestador_id, fecha))
 
-        cursor.execute(query, (prestador_id, fecha))
+        filas = self.cursor.fetchall()
 
-        filas = cursor.fetchall()
-
-        # devolver solo lista de horas
         return [f[0] for f in filas]
-    
-    def cancelar_reserva(self, id_reserva):
-        conn =ConexionDB.get_conexion()
-        cursor = conn.cursor()
 
-        cursor.execute(""" 
-            UPDATE reservas
-            SET estado= "Cancelada"
-            WHERE id = ?
-        """, (id_reserva,))
-        
-        conn.commit()
-        conn.close
-    
+    # ---------------- ACTUALIZAR ESTADO ----------------
     def actualizar_estado(self, id_reserva, nuevo_estado):
 
-        conn = ConexionDB.get_conexion()
-        cursor = conn.cursor()
-
-        #ACTUALIZAR ESTADO
-        cursor.execute("""
+        # actualizar estado
+        self.cursor.execute("""
             UPDATE reservas
             SET estado = ?
             WHERE id = ?
         """, (nuevo_estado, id_reserva))
 
-        # OBTENER CLIENTE DE ESA RESERVA
-        cursor.execute("""
+        # obtener cliente
+        self.cursor.execute("""
             SELECT cliente_id
             FROM reservas
             WHERE id = ?
         """, (id_reserva,))
 
-        cliente_id = cursor.fetchone()[0]
+        resultado = self.cursor.fetchone()
 
-        # CREAR NOTIFICACIÓN
-        mensaje = f"Tu reserva ahora está: {nuevo_estado}"
+        if resultado:
 
-        cursor.execute("""
-            INSERT INTO notificaciones (cliente_id, mensaje)
-            VALUES (?, ?)
-        """, (cliente_id, mensaje))
+            cliente_id = resultado[0]
 
-        conn.commit()
-        conn.close()
+            # crear notificación
+            mensaje = f"Tu reserva ahora está: {nuevo_estado}"
 
+            self.cursor.execute("""
+                INSERT INTO notificaciones (cliente_id, mensaje)
+                VALUES (?, ?)
+            """, (cliente_id, mensaje))
+
+        self.conn.commit()
+
+    # ---------------- CANCELAR RESERVA ----------------
+    def cancelar_reserva(self, id_reserva):
+
+        self.actualizar_estado(id_reserva, "Cancelada")
+
+    # ---------------- GUARDAR CALIFICACIÓN ----------------
     def guardar_calificacion(self, id_reserva, rating, comentario):
-        conn = ConexionDB.get_conexion()
-        cursor = conn.cursor()
 
-        cursor.execute("""
-            UPDATE reservas
-            SET rating = ?, comentario = ?, calificada = 1
+        # obtener cliente y prestador
+        self.cursor.execute("""
+            SELECT cliente_id, prestador_id
+            FROM reservas
             WHERE id = ?
-        """, (rating, comentario, id_reserva))
+        """, (id_reserva,))
 
-        conn.commit()
-        conn.close()
+        datos = self.cursor.fetchone()
+
+        if datos:
+
+            cliente_id = datos[0]
+            prestador_id = datos[1]
+
+            dao = CalificacionesDAO()
+
+            dao.crear_calificacion(
+                id_reserva,
+                cliente_id,
+                prestador_id,
+                rating,
+                comentario
+            )
+
+    # ---------------- CERRAR CONEXIÓN ----------------
+    def cerrar(self):
+
+        self.conn.close()

@@ -3,23 +3,20 @@ from database.conexion import ConexionDB
 conn = ConexionDB.get_conexion()
 cursor = conn.cursor()
 
-try:
-    cursor.execute("ALTER TABLE reservas ADD COLUMN rating INTEGER")
-except:
-    print("rating ya existe")
-
-try:
-    cursor.execute("ALTER TABLE reservas ADD COLUMN comentario TEXT")
-except:
-    print("comentario ya existe")
-
-try:
-    cursor.execute("ALTER TABLE reservas ADD COLUMN calificada INTEGER DEFAULT 0")
-except:
-    print("calificada ya existe")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS calificaciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reserva_id INTEGER,
+    cliente_id INTEGER,
+    prestador_id INTEGER,
+    rating INTEGER,
+    comentario TEXT,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
 conn.commit()
 conn.close()
 
-print("Base de datos actualizada correctamente")
+print("Tabla calificaciones creada")
 

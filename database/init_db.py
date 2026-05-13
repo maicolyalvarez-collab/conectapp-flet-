@@ -4,7 +4,6 @@ def init_db():
     conn = ConexionDB.get_conexion()
     cursor = conn.cursor()
 
-    # Tabla de usuarios
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,7 +14,6 @@ def init_db():
     )
     """)
 
-    # Tabla de reservas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reservas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,33 +24,43 @@ def init_db():
         servicio TEXT NOT NULL,
         estado TEXT NOT NULL DEFAULT 'CONFIRMADA',
 
-        rating INTEGER,
-        comentario TEXT,
-        calificada INTEGER DEFAULT 0,
+        comentario_reserva TEXT,
+
 
         FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
         FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
     )
     """)
 
-    # Tabla de horarios por prestador
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS horarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        prestador_id INTEGER NOT NULL,
-        fecha TEXT NOT NULL,
-        hora TEXT NOT NULL,
-        estado TEXT NOT NULL DEFAULT 'DISPONIBLE',
-        FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
-    )
-    """)
-
-    #tabla de notificaciones
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS notificaciones (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cliente_id INTEGER,
         mensaje TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS calificaciones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reserva_id INTEGER,
+        cliente_id INTEGER,
+        prestador_id INTEGER,
+        rating INTEGER,
+        comentario_calificacion TEXT,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+                   
+        FOREIGN KEY (reserva_id) REFERENCES reservas(id),
+
+        FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
+
+        FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sesion (
+        usuario_id INTEGER
     )
     """)
 

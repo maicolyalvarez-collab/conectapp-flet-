@@ -4,7 +4,9 @@ class Reserva:
                 prestador_id, fecha,
                 hora, cliente_id,
                 estado="CONFIRMADA",
-                id=None, calificada=False
+                id=None, 
+                calificada=False,
+                comentario_reserva=""
                 ):
 
         self.id = id
@@ -15,4 +17,5 @@ class Reserva:
         self.estado = estado
         self.cliente_id = cliente_id
         self.calificada = calificada
+        self.comentario_reserva= comentario_reserva
 

@@ -1,28 +1,32 @@
 import flet as ft
 from services.auth_service import AuthService
+from dao.sesion_dao import SesionDAO
 
 auth_service = AuthService()
+sesion_dao = SesionDAO()
+
 
 def login_view(page: ft.Page):
     print("CARGANDO LOGIN VIEW")
 
     page.clean()
-    page.bgcolor = "#000205" 
+    page.bgcolor = "#000205"
 
-    #campos del usuario
+    # ---------------- CAMPOS ----------------
     user_input = ft.TextField(
-        hint_text="Correo Electrónico", 
+        hint_text="Correo Electrónico",
         width=280
     )
 
     pass_input = ft.TextField(
-        hint_text="Contraseña", 
-        width=280, 
+        hint_text="Contraseña",
+        width=280,
         password=True
     )
 
     error_text = ft.Text("", color="red")
 
+    # ---------------- LOGIN ----------------
     def login_click(e):
 
         email = user_input.value
@@ -35,70 +39,71 @@ def login_view(page: ft.Page):
             page.update()
             return
 
-        # guardar usuario logueado
+        # 🔐 GUARDAR SESIÓN EN BD
+        sesion_dao.guardar(usuario.id)
+
+        # guardar usuario en memoria
         page.usuario_actual = usuario
 
-        # redirección por rol
+        # limpiar pantalla
         page.clean()
 
+        # ---------------- REDIRECCIÓN POR ROL ----------------
         if usuario.rol == "admin":
-            from view.admin.admin_view import HomeAdminView
-            page.add(HomeAdminView().build())
-            page.update()
+            from view.admin.home_admin_view import HomeAdminView
+            page.add(HomeAdminView(page, usuario).build())
 
         elif usuario.rol == "empleado":
-            from view.empleado.empleado_view import HomeClienteView
-            page.add(HomeClienteView().build())
-            page.update()
+            from view.empleado.empleado_view import HomeEmpleadoView
+            page.add(HomeEmpleadoView(page, usuario).build())
 
         elif usuario.rol == "cliente":
             from view.cliente.home_cliente_view import HomeClienteView
             page.add(HomeClienteView(page, usuario).build())
-            page.update()
 
-    #contenedor principal del login
+        page.update()
+
+    # ---------------- UI ----------------
     page.add(
         ft.Container(
             ft.Column(
-            [
-                ft.Text("Iniciar sesión",
-                    size=30, 
-                    weight="bold",
-                    color="white"
-                ),
+                [
+                    ft.Text(
+                        "Iniciar sesión",
+                        size=30,
+                        weight="bold",
+                        color="white"
+                    ),
 
-                #contraseñas de prueba
-                ft.Text(
-                    "admin, admin123",
-                    size=12,
-                    color="white70"
-                ),
+                    ft.Text(
+                        "admin / admin123 (prueba)",
+                        size=12,
+                        color="white70"
+                    ),
 
-                user_input,
-                pass_input,
+                    user_input,
+                    pass_input,
 
-                ft.Button(
-                    "Entrar",
-                    on_click=login_click,#conecta la funcion de login al boton
-                    bgcolor="blue",#color del fondo
-                    color="white" #color del texto
-                ),
+                    ft.Button(
+                        "Entrar",
+                        on_click=login_click,
+                        bgcolor="blue",
+                        color="white"
+                    ),
 
-                error_text
-            ],
-
-            spacing=20,
-            alignment=ft.MainAxisAlignment.CENTER,#centra verticalmente
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,#centra horizontalmente
-            expand=True
-        ),
-        bgcolor="#2f3643", 
-        border_radius=20,
-        padding=25,#espaciado interno del contenedor
-        width=320,
-        height=400,
-
-        shadow=ft.BoxShadow(
+                    error_text
+                ],
+                spacing=20,
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                expand=True
+            ),
+            bgcolor="#2f3643",
+            border_radius=20,
+            padding=25,
+            width=320,
+            height=400,
+            shadow=ft.BoxShadow(
                 blur_radius=15,
                 color="white",
                 spread_radius=3
