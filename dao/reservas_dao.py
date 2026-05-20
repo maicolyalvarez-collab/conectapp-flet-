@@ -2,6 +2,7 @@ from database.conexion import ConexionDB
 from models.reserva import Reserva
 from dao.calificaciones_dao import CalificacionesDAO
 from dao.notificaciones_dao import NotificacionesDAO
+from dao.horarios_base_prestadores_dao import marcar_disponible
 
 
 class ReservasDAO:
@@ -111,14 +112,18 @@ class ReservasDAO:
     def actualizar_estado(self, reserva_id, nuevo_estado):
         print("ACTUALIZANDO ESTADO")
 
-        # ACTUALIZAR ESTADO
+
         self.cursor.execute("""
             UPDATE reservas
             SET estado = ?
             WHERE id = ?
         """, (nuevo_estado, reserva_id))
 
-        # OBTENER CLIENTE_ID
+        print(
+            "ACTUALIZANDO:",
+            reserva_id,
+            nuevo_estado
+        )
         self.cursor.execute("""
             SELECT cliente_id
             FROM reservas
@@ -127,14 +132,12 @@ class ReservasDAO:
 
         resultado = self.cursor.fetchone()
 
-        # VALIDAR RESULTADO
         if resultado:
 
             cliente_id = resultado[0]
 
             mensaje = f"Tu reserva fue {nuevo_estado}"
 
-            # CREAR NOTIFICACION
             noti_dao = NotificacionesDAO()
 
             noti_dao.crear_notificacion(
@@ -142,12 +145,10 @@ class ReservasDAO:
                 mensaje
             )
 
-        # GUARDAR CAMBIOS
         self.conn.commit()
 
     def cancelar_reserva(self, reserva_id):
 
-        # OBTENER DATOS DE LA RESERVA
         self.cursor.execute("""
             SELECT
                 prestador_id,
@@ -165,15 +166,11 @@ class ReservasDAO:
             fecha = datos[1]
             hora = datos[2]
 
-            # CAMBIAR ESTADO DE RESERVA
             self.cursor.execute("""
                 UPDATE reservas
                 SET estado = 'CANCELADA'
                 WHERE id = ?
             """, (reserva_id,))
-
-            # LIBERAR HORARIO
-            from dao.horarios_base_prestadores_dao import marcar_disponible
 
             marcar_disponible(
                 prestador_id,
@@ -186,8 +183,20 @@ class ReservasDAO:
             print(
                 "RESERVA CANCELADA Y HORARIO LIBERADO"
             )
+    
+    def finalizar_reserva(self, reserva_id):
 
-    # GUARDAR CALIFICACION
+        # CAMBIAR ESTADO
+        self.cursor.execute("""
+            UPDATE reservas
+            SET estado = 'FINALIZADA'
+            WHERE id = ?
+        """, (reserva_id,))
+
+        self.conn.commit()
+
+        print("RESERVA FINALIZADA")
+
     def guardar_calificacion(
         self,
         id_reserva,

@@ -700,7 +700,11 @@ class ReservaView:
 
         for h in horarios:
 
-            disponible = h["estado"] == "DISPONIBLE"
+            estado =h["estado"]
+
+            disponible = estado == "DISPONIBLE"
+            finalizada = estado == "FINALIZADA"
+            confirmada = estado == "CONFIRMADA"
             
             seleccionado = self.hora_seleccionada == h["hora"]
             
@@ -715,7 +719,11 @@ class ReservaView:
 
                 bgcolor=(
                     "#2563eb" if seleccionado
+
                     else "#1e293b" if disponible
+
+                    else "#1d4ed8" if finalizada
+
                     else "#3a3a3a"
                 ),
 
@@ -741,12 +749,18 @@ class ReservaView:
 
                         ft.Text(
                             "Seleccionado" if seleccionado 
+
                             else "Disponible" if disponible 
+                            else "Finalizada" if finalizada
                             else "Ocupado",
 
                             color=(
                                 "#22c55e" if seleccionado
+
                                 else "#22c55e" if disponible 
+
+                                else "#60a5fa" if finalizada
+                                
                                 else "red"
                             ),
                             size=12

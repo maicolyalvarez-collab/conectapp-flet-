@@ -176,6 +176,37 @@ def marcar_disponible(
         hora
     )
 
+def marcar_finalizado(
+    prestador_id,
+    fecha,
+    hora
+):
+
+    conn = ConexionDB.get_conexion()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE horarios_base_empleados
+        SET estado = 'FINALIZADA'
+
+        WHERE prestador_id = ?
+        AND fecha = ?
+        AND hora = ?
+    """, (
+        prestador_id,
+        fecha,
+        hora
+    ))
+
+    conn.commit()
+
+    print(
+        "HORARIO FINALIZADO:",
+        prestador_id,
+        fecha,
+        hora
+    )
+
 def obtener_horarios_disponibles(
     prestador_id,
     fecha
@@ -198,7 +229,7 @@ def obtener_horarios_disponibles(
     horarios = cursor.fetchall()
 
     cursor.execute("""
-    SELECT hora
+    SELECT hora, estado
     FROM reservas
 
     WHERE prestador_id = ?
@@ -214,10 +245,10 @@ def obtener_horarios_disponibles(
 
     reservas = cursor.fetchall()
 
-    horas_ocupadas = [
-        reserva[0]
+    reservas_dict = {
+        reserva[0]: reserva[1]
         for reserva in reservas
-    ]
+    }
 
     resultado = []
 
@@ -225,21 +256,19 @@ def obtener_horarios_disponibles(
 
         hora = horario[0]
 
-        estado_bd = horario[1]
+        if hora in reservas_dict:
 
-        disponible = (
-            estado_bd == "DISPONIBLE"
-            and hora not in horas_ocupadas
-        )
+            estado_final = reservas_dict[hora]
+
+        else:
+
+            estado_final = "DISPONIBLE"
 
         resultado.append({
 
             "hora": hora,
 
-            "estado":
-                "DISPONIBLE"
-                if disponible
-                else "OCUPADO"
+            "estado": estado_final
 
         })
 

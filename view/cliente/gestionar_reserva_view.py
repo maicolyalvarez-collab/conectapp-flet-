@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import flet as ft
-from dao.horarios_base_prestadores_dao import marcar_disponible
+from dao.horarios_base_prestadores_dao import marcar_disponible, marcar_finalizado
 from dao.reservas_dao import ReservasDAO
 
 
@@ -40,7 +40,13 @@ class GestionarReservaView:
 
         self.manager.actualizar_estado(
             reserva.id,
-            "COMPLETADA"
+            "FINALIZADA"
+        )
+            
+        marcar_finalizado(
+            reserva.prestador_id,
+            reserva.fecha,
+            reserva.hora
         )
 
         self.recargar()
@@ -223,13 +229,13 @@ class GestionarReservaView:
             prestador_id = reserva.prestador_id
             hora = reserva.hora
 
+            self.manager.cancelar_reserva(reserva.id)
+
             marcar_disponible(
                 prestador_id,
                 dia_semana,
                 hora
             )
-
-            self.manager.cancelar_reserva(reserva.id)
 
             dialog.open = False
             self.page.update()
