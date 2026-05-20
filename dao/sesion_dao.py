@@ -14,7 +14,6 @@ class SesionDAO:
         )
 
         conn.commit()
-        conn.close()
 
     def obtener(self):
         conn = ConexionDB.get_conexion()
@@ -23,7 +22,6 @@ class SesionDAO:
         cursor.execute("SELECT usuario_id FROM sesion")
         fila = cursor.fetchone()
 
-        conn.close()
 
         return fila[0] if fila else None
 
@@ -34,4 +32,3 @@ class SesionDAO:
         cursor.execute("DELETE FROM sesion")
 
         conn.commit()
-        conn.close()

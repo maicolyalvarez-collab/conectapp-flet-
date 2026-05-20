@@ -10,12 +10,13 @@ def init_db():
         nombre TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        rol TEXT NOT NULL
+        rol TEXT NOT NULL,
+        tipo_servicio TEXT
     )
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reservas (
+    CREATE TABLE IF NOT EXISTS reservas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cliente_id INTEGER NOT NULL,
         prestador_id INTEGER NOT NULL,
@@ -25,7 +26,8 @@ def init_db():
         estado TEXT NOT NULL DEFAULT 'CONFIRMADA',
 
         comentario_reserva TEXT,
-
+        
+        calificada TEXT DEFAULT 'NO CALIFICADA',
 
         FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
         FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
@@ -33,10 +35,21 @@ def init_db():
     """)
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS notificaciones (
+    CREATE TABLE IF NOT EXISTS horarios_base_empleados (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cliente_id INTEGER,
-        mensaje TEXT
+
+        prestador_id INTEGER NOT NULL,
+
+        dia_semana TEXT NOT NULL,
+
+        hora TEXT NOT NULL,
+        
+        UNIQUE(prestador_id, dia_semana, hora),
+
+        FOREIGN KEY (prestador_id)
+        REFERENCES usuarios(id)
+
     )
     """)
 
@@ -49,12 +62,28 @@ def init_db():
         rating INTEGER,
         comentario_calificacion TEXT,
         fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-                   
+
         FOREIGN KEY (reserva_id) REFERENCES reservas(id),
 
         FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
 
         FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notificaciones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        usuario_id INTEGER NOT NULL,
+
+        mensaje TEXT NOT NULL,
+
+        leida INTEGER DEFAULT 0,
+
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     )
     """)
 

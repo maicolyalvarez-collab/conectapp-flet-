@@ -32,6 +32,9 @@ def login_view(page: ft.Page):
         email = user_input.value
         password = pass_input.value
 
+        print("EMAIL:", email)
+        print("PASSWORD:", password)
+
         usuario = auth_service.login(email, password)
 
         if not usuario:
@@ -39,14 +42,12 @@ def login_view(page: ft.Page):
             page.update()
             return
 
-        # 🔐 GUARDAR SESIÓN EN BD
         sesion_dao.guardar(usuario.id)
 
-        # guardar usuario en memoria
         page.usuario_actual = usuario
 
-        # limpiar pantalla
         page.clean()
+        
 
         # ---------------- REDIRECCIÓN POR ROL ----------------
         if usuario.rol == "admin":

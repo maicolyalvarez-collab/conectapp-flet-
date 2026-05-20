@@ -1,6 +1,7 @@
 from database.conexion import ConexionDB
 from models.reserva import Reserva
 from dao.calificaciones_dao import CalificacionesDAO
+from dao.notificaciones_dao import NotificacionesDAO
 
 
 class ReservasDAO:
@@ -10,7 +11,6 @@ class ReservasDAO:
         self.conn = ConexionDB.get_conexion()
         self.cursor = self.conn.cursor()
 
-    # ---------------- AGREGAR RESERVA ----------------
     def agregar_reserva(self, reserva: Reserva):
 
         self.cursor.execute("""
@@ -21,9 +21,10 @@ class ReservasDAO:
                 hora,
                 estado,
                 cliente_id,
-                comentario_reserva
+                comentario_reserva,
+                calificada
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             reserva.servicio,
             reserva.prestador_id,
@@ -31,12 +32,12 @@ class ReservasDAO:
             reserva.hora,
             reserva.estado,
             reserva.cliente_id,
-            reserva.comentario_reserva
+            reserva.comentario_reserva,
+            "NO CALIFICADA"
         ))
 
         self.conn.commit()
 
-    # ---------------- OBTENER RESERVAS CLIENTE ----------------
     def obtener_reservas_por_cliente(self, cliente_id):
 
         self.cursor.execute("""
@@ -48,7 +49,8 @@ class ReservasDAO:
                 hora,
                 estado,
                 cliente_id,
-                comentario_reserva
+                comentario_reserva,
+                calificada
             FROM reservas
             WHERE cliente_id = ?
             ORDER BY fecha DESC
@@ -69,13 +71,13 @@ class ReservasDAO:
                     hora=f[4],
                     estado=f[5],
                     cliente_id=f[6],
-                    comentario_reserva=f[7]
+                    comentario_reserva=f[7],
+                    calificada=f[8]
                 )
             )
 
         return reservas
 
-    # ---------------- HORAS OCUPADAS ----------------
     def obtener_por_prestador_y_fecha(self, prestador_id, fecha):
 
         self.cursor.execute("""
@@ -89,48 +91,60 @@ class ReservasDAO:
 
         return [f[0] for f in filas]
 
-    # ---------------- ACTUALIZAR ESTADO ----------------
-    def actualizar_estado(self, id_reserva, nuevo_estado):
 
-        # actualizar estado
+    def actualizar_estado(self, reserva_id, nuevo_estado):
+        print("ACTUALIZANDO ESTADO")
+
+        # ACTUALIZAR ESTADO
         self.cursor.execute("""
             UPDATE reservas
             SET estado = ?
             WHERE id = ?
-        """, (nuevo_estado, id_reserva))
+        """, (nuevo_estado, reserva_id))
 
-        # obtener cliente
+        # OBTENER CLIENTE_ID
         self.cursor.execute("""
             SELECT cliente_id
             FROM reservas
             WHERE id = ?
-        """, (id_reserva,))
+        """, (reserva_id,))
 
         resultado = self.cursor.fetchone()
 
+        # VALIDAR RESULTADO
         if resultado:
 
             cliente_id = resultado[0]
 
-            # crear notificación
-            mensaje = f"Tu reserva ahora está: {nuevo_estado}"
+            mensaje = f"Tu reserva fue {nuevo_estado}"
 
-            self.cursor.execute("""
-                INSERT INTO notificaciones (cliente_id, mensaje)
-                VALUES (?, ?)
-            """, (cliente_id, mensaje))
+            # CREAR NOTIFICACION
+            noti_dao = NotificacionesDAO()
 
+            noti_dao.crear_notificacion(
+                cliente_id,
+                mensaje
+            )
+
+        # GUARDAR CAMBIOS
         self.conn.commit()
 
-    # ---------------- CANCELAR RESERVA ----------------
     def cancelar_reserva(self, id_reserva):
 
-        self.actualizar_estado(id_reserva, "Cancelada")
+        self.actualizar_estado(
+            id_reserva,
+            "CANCELADA"
+        )
 
-    # ---------------- GUARDAR CALIFICACIÓN ----------------
-    def guardar_calificacion(self, id_reserva, rating, comentario):
+    # GUARDAR CALIFICACION
+    def guardar_calificacion(
+        self,
+        id_reserva,
+        rating,
+        comentario
+    ):
 
-        # obtener cliente y prestador
+        # OBTENER IDS
         self.cursor.execute("""
             SELECT cliente_id, prestador_id
             FROM reservas
@@ -146,6 +160,7 @@ class ReservasDAO:
 
             dao = CalificacionesDAO()
 
+            # CREAR CALIFICACION
             dao.crear_calificacion(
                 id_reserva,
                 cliente_id,
@@ -154,7 +169,11 @@ class ReservasDAO:
                 comentario
             )
 
-    # ---------------- CERRAR CONEXIÓN ----------------
-    def cerrar(self):
+            # MARCAR COMO CALIFICADA
+            self.cursor.execute("""
+                UPDATE reservas
+                SET calificada = 'CALIFICADA'
+                WHERE id = ?
+            """, (id_reserva,))
 
-        self.conn.close()
+            self.conn.commit()

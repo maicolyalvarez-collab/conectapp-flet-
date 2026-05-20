@@ -4,10 +4,10 @@ from dao.reservas_dao import ReservasDAO
 
 class GestionarReservaView:
 
-    def __init__(self, page, usuario):
+    def __init__(self, page, usuario_actual):
 
         self.page = page
-        self.usuario = usuario
+        self.usuario_actual = usuario_actual
         self.manager = ReservasDAO()
 
     # MENSAJE EMERGENTE
@@ -194,7 +194,7 @@ class GestionarReservaView:
         self.page.add(
             HomeClienteView(
                 self.page,
-                self.usuario
+                self.usuario_actual
             ).build()
         )
 
@@ -282,7 +282,7 @@ class GestionarReservaView:
 
                 ft.TextButton(
 
-                    "Finalizar (test)",
+                    "Finalizar Reserva",
 
                     on_click=lambda e:
                     self.finalizar_reserva(reserva)
@@ -291,34 +291,25 @@ class GestionarReservaView:
 
         # CALIFICAR
 
-        if estado == "COMPLETADA":
+        if estado == "COMPLETADA" and reserva.calificada == "NO CALIFICADA":
 
-            if not reserva.calificada:
-
-                botones.append(
-
-                    ft.TextButton(
-
-                        "Calificar",
-
-                        on_click=lambda e:
-                        self.abrir_calificacion(reserva)
-                    )
+            botones.append(
+                ft.TextButton(
+                    "Calificar",
+                    on_click=lambda e: self.abrir_calificacion(reserva)
                 )
+            )
 
-            else:
+        #Calificado
+        if reserva.calificada == "CALIFICADA":
 
-                botones.append(
-
-                    ft.Text(
-
-                        "CALIFICADO",
-
-                        color="white",
-                        weight="bold"
-                    )
+            botones.append(
+                ft.Text(
+                    "CALIFICADO",
+                    color="white",
+                    weight="bold"
                 )
-
+            )
         return ft.Container(
 
             padding=15,
@@ -326,13 +317,9 @@ class GestionarReservaView:
             bgcolor="#1e1e1e",
 
             content=ft.Row(
-
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-
                 controls=[
-
                     # INFO RESERVA
-
                     ft.Column(
                         spacing=5,
                         controls=[
@@ -403,7 +390,7 @@ class GestionarReservaView:
         if not hasattr(self.page, "usuario_actual"):
 
             return ft.Text(
-                "Usuario no autenticado",
+                "usuario_actual no autenticado",
                 color="red"
             )
 

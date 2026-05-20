@@ -3,6 +3,7 @@ from datetime import datetime
 from dao.reservas_dao import ReservasDAO
 from models.reserva import Reserva
 from dao.notificaciones_dao import NotificacionesDAO
+from dao.horarios_base_prestadores_dao import obtener_horarios_disponibles
 
 
 class ReservaView:
@@ -11,31 +12,55 @@ class ReservaView:
         self.page = page
         self.usuario_actual = usuario_actual
 
-        # estado del flujo
         self.paso = 1
 
-        # datos de la reserva
         self.servicio_seleccionado = None
         self.prestador_seleccionado = None
+
         self.fecha = None
         self.hora = None
 
-        #horarios base
-        self.horarios_fijos = ["09:00", "14:00"]
+        self.comentario =""
 
-        # textos dinámicos
-        self.fecha_text = ft.Text("Fecha no seleccionada", color="white70")
-        self.hora_text = ft.Text("Hora no seleccionada", color="white70")
-        self.mensaje = ft.Text("", color="red")
+
+        self.fecha_text = ft.Text(
+            "Fecha no seleccionada", 
+            color="white70"
+        )
+
+        self.hora_text = ft.Text(
+            "Hora no seleccionada", 
+            color="white70"
+        )
+
+        self.mensaje = ft.Text(
+            "", 
+            color="red"
+        )
 
         # pickers
-        self.date_picker = ft.DatePicker(on_change=self.seleccionar_fecha)
-        self.time_picker = ft.TimePicker(on_change=self.seleccionar_hora)
+        self.date_picker = ft.DatePicker(
+            on_change=self.seleccionar_fecha
+        )
 
-        self.page.overlay.extend([self.date_picker, self.time_picker])
+        self.time_picker = ft.TimePicker(
+            on_change=self.seleccionar_hora
+        )
 
+        self.page.overlay.extend([
+            self.date_picker, 
+            self.time_picker
+        ])
     
-    # CONTROL DE FLUJO
+        
+    def cambiar_vista(self, vista):
+
+        self.page.clean()
+
+        self.page.add(vista)
+
+        self.page.update()
+
     
     def siguiente(self):
         self.paso += 1
@@ -49,29 +74,47 @@ class ReservaView:
         self.page.clean()
         self.page.add(self.build())
         self.page.update()
-
+    
     def obtener_horarios_disponibles(self):
 
-        dao = ReservasDAO()
-
-        # ya es lista de strings
-        ocupados = dao.obtener_por_prestador_y_fecha(
-            self.prestador_seleccionado,
-            self.fecha
+        fecha_obj = datetime.strptime(
+            self.fecha,
+            "%Y-%m-%d"
         )
 
-        resultado = []
+        dias = [
+            "lunes",
+            "martes",
+            "miercoles",
+            "jueves",
+            "viernes",
+            "sabado",
+            "domingo"
+        ]
 
-        for h in self.horarios_fijos:
+        dia_semana = dias[
+            fecha_obj.weekday()
+        ]
 
-            resultado.append({
-                "hora": h,
-                "disponible": h not in ocupados
-            })
+        return obtener_horarios_disponibles(
 
-        return resultado
+            self.prestador_seleccionado,
+
+            self.fecha,
+
+            dia_semana
+        )
+
     
-    # PICKERS
+    def tiene_horarios_disponibles(self):
+
+        horarios = self.obtener_horarios_disponibles()
+
+        return any(
+            h["disponible"]
+            for h in horarios
+        )
+    
     
     def abrir_fecha(self):
         self.date_picker.open = True
@@ -83,59 +126,247 @@ class ReservaView:
 
     def seleccionar_fecha(self, e):
         if e.control.value:
-            self.fecha = e.control.value.strftime("%Y-%m-%d")
-            self.fecha_text.value = f"Fecha: {self.fecha}"
+
+            self.fecha = e.control.value.strftime(
+                "%Y-%m-%d"
+            )
+
+            self.fecha_text.value = (
+                f"Fecha: {self.fecha}"
+            )
+
             self.page.update()
 
     def seleccionar_hora(self, e):
+
         if e.control.value:
-            self.hora = e.control.value.strftime("%H:%M")
-            self.hora_text.value = f"Hora: {self.hora}"
+
+            self.hora = e.control.value.strftime(
+                "%H:%M"
+            )
+
+            self.hora_text.value = (
+                f"Hora: {self.hora}"
+            )
+
             self.page.update()
+    
+    def volver(self, e):
+        from view.cliente.home_cliente_view import HomeClienteView
+
+        self.cambiar_vista(
+            HomeClienteView(
+                self.page,
+                self.usuario_actual
+            ).build()
+        )
 
     def ir_reservas(self, e):
         from view.cliente.gestionar_reserva_view import GestionarReservaView
 
-        view = GestionarReservaView(self.page, self.usuario_actual)
 
-        self.page.controls.clear()
-        self.page.add(view.build())
-        self.page.update()
+        self.cambiar_vista(
+
+            GestionarReservaView(
+                self.page,
+                self.usuario_actual
+            ).build()
+        )
         
-    def volver(self, e):
+    
+    def cancelar_reserva(self, e):
+
         from view.cliente.home_cliente_view import HomeClienteView
 
-        self.page.clean()
-        self.page.add(HomeClienteView(self.page, self.usuario_actual).build())
+        self.cambiar_vista(
+
+            HomeClienteView(
+                self.page,
+                self.usuario_actual
+            ).build()
+        )
+
         self.page.update()
 
+    def botones_navegacion(
+        self,
+
+        continuar=None,
+
+        mostrar_atras=True,
+
+        mostrar_cancelar=True,
+
+        mostrar_continuar=True,
+
+        texto_continuar="Continuar"
+    ):
+
+        botones = []
+
+        if mostrar_atras:
+
+            botones.append(
+
+                ft.OutlinedButton(
+
+                    "Atrás",
+
+                    icon=ft.Icons.ARROW_BACK,
+
+                    on_click=self.atras,
+
+                    width=150,
+                    height=50,
+
+                    style=ft.ButtonStyle(
+                        color="white",
+                        side=ft.BorderSide(
+                            1.5,
+                            "#38bdf8"
+                        ),
+
+                        shape=ft.RoundedRectangleBorder(
+                            radius=14
+                        ),
+
+                        padding=20
+                    )
+                )
+            )
+
+        if mostrar_cancelar:
+
+            botones.append(
+
+                ft.Button(
+
+                    "Cancelar",
+
+                    icon=ft.Icons.CLOSE,
+
+                    on_click=self.cancelar_reserva,
+
+                    width=150,
+                    height=50,
+
+                    style=ft.ButtonStyle(
+
+                        bgcolor="#111827",
+
+                        color="#ef4444",
+
+                        side=ft.BorderSide(
+                            1.2,
+                            "#7f1d1d"
+                        ),
+
+                        shape=ft.RoundedRectangleBorder(
+                            radius=14
+                        ),
+
+                        overlay_color="#450a0a",
+
+                        padding=20
+                    )
+                )
+            )
+
+        if mostrar_continuar and continuar:
+
+            botones.append(
+
+                ft.Container(
+
+                    border_radius=14,
+
+                    content=ft.Button(
+
+                        texto_continuar,
+
+                        icon=ft.Icons.ARROW_FORWARD,
+
+                        on_click=continuar,
+
+                        width=150,
+                        height=50,
+
+                        style=ft.ButtonStyle(
+
+                            bgcolor="#111827",
+
+                            color="white",
+
+                            side=ft.BorderSide(
+                                1.2,
+                                "#374151"
+                            ),
+
+                            overlay_color="#2563eb",
+
+                            shape=ft.RoundedRectangleBorder(
+                                radius=14
+                            ),
+
+                            padding=20
+                        )
+                    )
+                )
+            )
+
+        return ft.Row(
+
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=20,
+            controls=botones
+        )
     
-    # LINE 
     
     def line(self):
-        pasos = ["Servicio", "Prestador", "Fecha", "Hora", "Confirmacion", "Éxito"]
+        pasos = ["Servicio", 
+                "Prestador", 
+                "Fecha", 
+                "Hora",
+                "Comentario", 
+                "Confirmacion",
+                "Éxito"]
 
         items = []
 
         for i, nombre in enumerate(pasos, start=1):
 
             completado = self.paso > i
+
             actual = self.paso == i
 
-            color = "#38bdf8" if (completado or actual) else "#374151"
+            color = ( 
+                "#38bdf8" 
+                if (completado or actual) 
+                else "#374151"
+            )
 
-            texto = "✔" if completado else str(i)
+            texto = ( 
+                "✔" 
+                if completado 
+                else str(i)
+            )
 
             items.append(
                 ft.Column(
                     [
                         ft.Container(
+
                             width=35,
                             height=35,
+
                             border_radius=50,
+
                             bgcolor=color,
+
                             alignment=ft.Alignment.CENTER,
+
                             content=ft.Text(
+
                                 texto,
                                 color="black" if (completado or actual) else "white",
                                 weight="bold"
@@ -152,13 +383,14 @@ class ReservaView:
                     ft.Container(
                         width=50,
                         height=2,
-                        bgcolor="#38bdf8" if self.paso > i else "#374151"
+                        bgcolor= ("#38bdf8" 
+                            if self.paso > i 
+                            else "#374151"
+                        )
                     )
                 )
 
         return ft.Row(items, alignment=ft.MainAxisAlignment.CENTER)
-
-    # PASO 1
     
     def seleccionar_servicio(self, nombre):
         self.servicio_seleccionado = nombre
@@ -184,7 +416,11 @@ class ReservaView:
 
             shadow=ft.BoxShadow(
                 blur_radius=20,
-                color="#38bdf8" if seleccionado else "black"
+                color=(
+                    "#38bdf8" 
+                    if seleccionado 
+                    else "black"
+                )
             ),
             on_click=lambda e: self.seleccionar_servicio(nombre)
         )
@@ -193,24 +429,31 @@ class ReservaView:
         return ft.Column(
             [
                 ft.Text("Selecciona un plan", size=25, color="white"),
+                
+                ft.Container(height=40),
 
                 ft.Row(
                     [
-                        self.card("Básico", "$20.000"),
-                        self.card("Avanzado", "$35.000"),
-                        self.card("Pro", "$50.000"),
+                        self.card("Limpieza general", "$250.000"),
+                        self.card("Limpieza profunda", "$400.000"),
+                        self.card("Limpieza en alturas", "$450.000"),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER
                 ),
 
-                ft.Button("Continuar", on_click=self.validar_paso_1),
+                ft.Container(height=40),
+
+                self.botones_navegacion(
+                    continuar=self.validar_paso_1,
+                    mostrar_atras=False
+                ),
 
                 self.mensaje
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER
         )
 
-    def validar_paso_1(self, e):
+    def validar_paso_1(self, e):                        
 
         if not self.servicio_seleccionado:
             self.mensaje.value = "Selecciona un servicio"
@@ -220,71 +463,77 @@ class ReservaView:
         self.mensaje.value = ""
         self.siguiente()
 
-    
-    # PASO 2
-    
-  # PASO 2
 
     def paso_2(self):
 
-        # EJEMPLO: esto luego lo conectas a BD
-        prestadores = [
-            {"id": 1, "nombre": "Ana López", "tipo": "Básico"},
-            {"id": 2, "nombre": "Carlos Ruiz", "tipo": "Avanzado"},
-            {"id": 3, "nombre": "Laura Gómez", "tipo": "Pro"},
+        from dao.usuarios_dao import UsuariosDAO
+
+        dao = UsuariosDAO()
+        filas = dao.listar_por_servicio(self.servicio_seleccionado)
+
+        empleados = [
+            {
+                "id": fila[0],
+                "nombre": fila[1],
+                "tipo": fila[2]
+            }
+            for fila in filas
         ]
 
-        # filtrar por servicio seleccionado
-        filtrados = [
-            p for p in prestadores
-            if p["tipo"] == self.servicio_seleccionado
-        ]
-
-        def seleccionar_prestador(e):
+        def seleccionar_empleado(e):
             self.prestador_seleccionado = e.control.data
             self.recargar()
 
         cards = []
 
-        for p in filtrados:
+        for p in empleados:
 
             seleccionado = self.prestador_seleccionado == p["id"]
 
-            card = ft.Container(
+            cards.append(
+                ft.Container(
 
-                data=p["id"],
+                    data=p["id"],
 
-                width=160,
-                height=120,
+                    width=160,
+                    height=120,
 
-                bgcolor="#2563eb" if seleccionado else "#1e293b",
+                    bgcolor=(
+                        "#2563eb" 
+                        if seleccionado 
+                        else "#1e293b"
+                    ),
 
-                border_radius=15,
+                    border_radius=15,
 
-                shadow=ft.BoxShadow(
-                    blur_radius=20,
-                    color="#38bdf8" if seleccionado else "black"
-                ),
+                    shadow=ft.BoxShadow(
+                        blur_radius=20,
+                        color="#38bdf8" if seleccionado else "black"
+                    ),
 
-                content=ft.Column(
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    controls=[
+                    content=ft.Column(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        controls=[
 
-                        ft.Icon(ft.Icons.PERSON, color="white"),
+                            ft.Icon(ft.Icons.PERSON, color="white"),
 
-                        ft.Text(
-                            p["nombre"],
-                            color="white",
-                            weight="bold"
-                        )
-                    ]
-                ),
+                            ft.Text(
+                                p["nombre"],
+                                color="white",
+                                weight="bold"
+                            ),
 
-                on_click=seleccionar_prestador
+                            ft.Text(
+                                p["tipo"],
+                                color="white70",
+                                size=10
+                            )
+                        ]
+                    ),
+                    on_click=seleccionar_empleado
+                )
             )
-
-            cards.append(card)
 
         return ft.Column(
 
@@ -310,24 +559,10 @@ class ReservaView:
 
                 ft.Container(height=30),
 
-                ft.Row(
-
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20,
-
-                    controls=[
-
-                        ft.OutlinedButton(
-                            "Atrás",
-                            on_click=self.atras
-                        ),
-
-                        ft.Button(
-                            "Continuar",
-                            on_click=self.validar_paso_2
-                        )
-                    ]
+                self.botones_navegacion(
+                    continuar=self.validar_paso_2
                 ),
+
                 self.mensaje
             ]
         )
@@ -383,21 +618,8 @@ class ReservaView:
 
                 ft.Container(height=30),
 
-                ft.Row(
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20,
-                    controls=[
-
-                        ft.OutlinedButton(
-                            "Atrás",
-                            on_click=self.atras
-                        ),
-
-                        ft.Button(
-                            "Continuar",
-                            on_click=self.validar_paso_3
-                        )
-                    ]
+                self.botones_navegacion(
+                    continuar=self.validar_paso_3
                 ),
 
                 self.mensaje
@@ -414,27 +636,36 @@ class ReservaView:
             self.page.update()
             return
 
-        fecha_sel = datetime.strptime(self.fecha, "%Y-%m-%d").date()
-        hoy = datetime.now().date()
+        from services.reserva_services import ReservaService
 
-        #no fechas pasadas
-        if fecha_sel < hoy:
-            self.mensaje.value = "No puedes seleccionar una fecha pasada"
+        valido, mensaje = (
+            ReservaService.validar_fecha(
+                self.fecha
+            )
+        )
+
+        if not valido:
+
+            self.mensaje.value = mensaje
+
             self.page.update()
+
             return
 
-        #solo lunes a viernes
-        if fecha_sel.weekday() > 4:
-            self.mensaje.value = "Solo se permiten días entre semana"
+        if not self.tiene_horarios_disponibles():
+
+            self.mensaje.value = (
+                "No hay horarios disponibles "
+                "para este prestador en esa fecha"
+            )
+
+            self.mensaje.color = "red"
+
             self.page.update()
+
             return
 
-        self.mensaje.value = ""
-
-        # avanzar a horarios
         self.siguiente()
-
-    # PASO 4 CONFIRMACIÓN 
 
     def paso_4(self):
 
@@ -522,34 +753,106 @@ class ReservaView:
 
                 ft.Container(height=30),
 
-                ft.Row(
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20,
-                    controls=[
-
-                        ft.OutlinedButton("Atrás", on_click=self.atras),
-
-                        ft.Button("Continuar", on_click=self.validar_paso_4)
-                    ]
+                self.botones_navegacion(
+                    continuar=self.validar_paso_4
                 ),
 
                 self.mensaje
             ]
         )
+    
     def validar_paso_4(self, e):
 
         if not self.hora:
             self.mensaje.value = "Selecciona un horario"
             self.mensaje.color = "red"
+
             self.page.update()
             return
+
+        ahora = datetime.now()
+
+        fecha_reserva = datetime.strptime(
+            self.fecha,
+            "%Y-%m-%d"
+        ).date()
+
+        hora_reserva = datetime.strptime(
+            self.hora.strip().replace(" AM", "").replace(" PM", ""),
+            "%H:%M"
+        ).time()
+
+        if fecha_reserva == ahora.date():
+
+            fecha_hora_reserva = datetime.combine(
+                fecha_reserva,
+                hora_reserva
+            )
+
+            if fecha_hora_reserva <= ahora:
+
+                self.mensaje.value = (
+                    "No puedes reservar horarios pasados"
+                )
+
+                self.mensaje.color = "red"
+
+                self.page.update()
+                return
 
         self.mensaje.value = ""
         self.siguiente()
     
-    # PASO 5 CONFIRMAR RESERVA
-
     def paso_5(self):
+
+        comentario_input = ft.TextField(
+            label="Comentario para el prestador",
+            multiline=True,
+            min_lines=4,
+            max_lines=6,
+            width=420,
+            border_color="#38bdf8",
+            color="white"
+        )
+
+        def continuar(e):
+
+            self.comentario = comentario_input.value
+
+            self.siguiente()
+
+        return ft.Column(
+
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+
+            controls=[
+
+                ft.Text(
+                    "¿Deseas dejar un comentario?",
+                    size=28,
+                    weight="bold",
+                    color="white"
+                ),
+
+                ft.Text(
+                    "Puedes agregar detalles adicionales para el prestador",
+                    color="white70"
+                ),
+
+                ft.Container(height=20),
+
+                comentario_input,
+
+                ft.Container(height=30),
+
+                self.botones_navegacion(
+                    continuar=continuar
+                )
+            ]
+        )
+    
+
+    def paso_6(self):
 
         return ft.Column(
 
@@ -614,36 +917,9 @@ class ReservaView:
 
                 ft.Container(height=25),
 
-                ft.Row(
-
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20,
-
-                    controls=[
-
-                        ft.OutlinedButton(
-                            "Atrás",
-                            on_click=lambda e: self.atras(),
-
-                            style=ft.ButtonStyle(
-                                color="white",
-                                side=ft.BorderSide(1, "#38bdf8"),
-                                padding=15
-                            )
-                        ),
-
-                        ft.Button(
-                            "Confirmar Reserva",
-                            icon=ft.Icons.CHECK,
-                            on_click=self.guardar_reserva,
-
-                            style=ft.ButtonStyle(
-                                bgcolor="#2563eb",
-                                color="white",
-                                padding=20
-                            )
-                        )
-                    ]
+                self.botones_navegacion(
+                    continuar=self.guardar_reserva,
+                    texto_continuar="Confirmar Reserva"
                 ),
 
                 self.mensaje
@@ -651,67 +927,12 @@ class ReservaView:
         )
 
 
-    # GUARDAR RESERVA
-
-    def guardar_reserva(self, e):
-
-        if not hasattr(self.page, "usuario_actual"):
-            return
-
-        dao = ReservasDAO()
-
-        # VALIDAR SI YA EXISTE ESA RESERVA
-        ocupadas = dao.obtener_por_prestador_y_fecha(
-            self.prestador_seleccionado,
-            self.fecha
-        )
-
-        if self.hora in ocupadas:
-
-            self.mensaje.value = "Ese horario ya fue reservado"
-            self.mensaje.color = "red"
-
-            self.page.update()
-            return
-
-        nueva = Reserva(
-
-            servicio=self.servicio_seleccionado,
-
-            prestador_id=self.prestador_seleccionado,
-
-            fecha=self.fecha,
-
-            hora=self.hora,
-
-            cliente_id=self.page.usuario_actual.id
-        )
-
-        # GUARDAR EN BD
-        dao.agregar_reserva(nueva)
-
-        # CREAR NOTIFICACIÓN
-        notificacion = NotificacionesDAO()
-
-        notificacion.crear_notificacion(
-
-            self.page.usuario_actual.id,
-
-            f"Tu reserva con {self.prestador_seleccionado} fue agendada para el {self.fecha} a las {self.hora}"
-        )
-
-        # IR A ÉXITO
-        self.paso = 6
-
-        self.recargar()
-    
-    # PASO 6 → ÉXITO
-
-    def paso_exito(self):
+    def paso_7(self):
 
         return ft.Column(
 
             expand=True,
+            scroll=ft.ScrollMode.ALWAYS,
 
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -750,7 +971,6 @@ class ReservaView:
                                 )
                             ),
 
-                            # TITULO
                             ft.Text(
                                 "¡Reserva confirmada!",
                                 size=28,
@@ -758,7 +978,6 @@ class ReservaView:
                                 color="white"
                             ),
 
-                            # SUBTEXTO
                             ft.Text(
                                 "Tu servicio fue agendado correctamente",
                                 color="white70",
@@ -767,7 +986,6 @@ class ReservaView:
 
                             ft.Divider(color="white24"),
 
-                            # RESUMEN
                             ft.Container(
                                 padding=20,
                                 border_radius=15,
@@ -828,7 +1046,6 @@ class ReservaView:
                                 ]
                             ),
 
-                            # BOTONES
                             ft.Row(
                                 alignment=ft.MainAxisAlignment.CENTER,
                                 spacing=15,
@@ -865,28 +1082,77 @@ class ReservaView:
                 )
             ]
         )
+    
+
+    def guardar_reserva(self, e):
+
+        if not hasattr(self.page, "usuario_actual"):
+            return
+
+        dao = ReservasDAO()
+
+        # VALIDAR SI YA EXISTE ESA RESERVA
+        ocupadas = dao.obtener_por_prestador_y_fecha(
+            self.prestador_seleccionado,
+            self.fecha
+        )
+
+        if self.hora in ocupadas:
+
+            self.mensaje.value = "Ese horario ya fue reservado"
+            self.mensaje.color = "red"
+
+            self.page.update()
+            return
+
+        nueva = Reserva(
+
+            servicio=self.servicio_seleccionado,
+
+            prestador_id=self.prestador_seleccionado,
+
+            fecha=self.fecha,
+
+            hora=self.hora,
+
+            cliente_id=self.page.usuario_actual.id
+        )
+
+        # GUARDAR EN BD
+        dao.agregar_reserva(nueva)
+
+        # CREAR NOTIFICACIÓN
+        notificacion = NotificacionesDAO()
+
+        notificacion.crear_notificacion(
+
+            self.page.usuario_actual.id,
+
+            f"Tu reserva con {self.prestador_seleccionado} fue agendada para el {self.fecha} a las {self.hora}"
+        )
+
+        # IR A ÉXITO
+        self.paso = 7
+
+        self.recargar()
    
     # BUILD
     
     def build(self):
 
-        if self.paso == 1:
-            contenido = self.paso_1()
+        pasos = {
 
-        elif self.paso == 2:
-            contenido = self.paso_2()
+            1: self.paso_1,
+            2: self.paso_2,
+            3: self.paso_3,
+            4: self.paso_4,
+            5: self.paso_5,
+            6: self.paso_6,
+            7: self.paso_7
+        }
 
-        elif self.paso == 3:
-            contenido = self.paso_3()
+        contenido = pasos[self.paso]()
 
-        elif self.paso == 4:
-            contenido = self.paso_4()
-        
-        elif self.paso ==5:
-            contenido = self.paso_5()
-        
-        elif self.paso == 6:
-            contenido = self.paso_exito()
 
         return ft.Container(
             content=ft.Column(
