@@ -42,10 +42,14 @@ def init_db():
         prestador_id INTEGER NOT NULL,
 
         dia_semana TEXT NOT NULL,
+        
+        fecha TEXT NOT NULL,
 
         hora TEXT NOT NULL,
         
-        UNIQUE(prestador_id, dia_semana, hora),
+        estado TEXT DEFAULT 'DISPONIBLE',
+        
+        UNIQUE(prestador_id, fecha, hora),
 
         FOREIGN KEY (prestador_id)
         REFERENCES usuarios(id)

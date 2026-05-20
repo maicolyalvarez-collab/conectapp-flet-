@@ -78,6 +78,20 @@ class ReservasDAO:
 
         return reservas
 
+    def existe_reserva(self, prestador_id, fecha, hora):
+
+        self.cursor.execute("""
+            SELECT 1
+            FROM reservas
+            WHERE prestador_id = ?
+            AND fecha = ?
+            AND hora = ?
+            AND estado = 'CONFIRMADA'
+            LIMIT 1
+        """, (prestador_id, fecha, hora))
+
+        return self.cursor.fetchone() is not None
+
     def obtener_por_prestador_y_fecha(self, prestador_id, fecha):
 
         self.cursor.execute("""
@@ -85,11 +99,13 @@ class ReservasDAO:
             FROM reservas
             WHERE prestador_id = ?
             AND fecha = ?
+            AND estado = 'CONFIRMADA'
         """, (prestador_id, fecha))
 
-        filas = self.cursor.fetchall()
 
-        return [f[0] for f in filas]
+        filas = self.cursor.fetchall()
+        
+        return [fila[0] for fila in filas]
 
 
     def actualizar_estado(self, reserva_id, nuevo_estado):
@@ -129,12 +145,47 @@ class ReservasDAO:
         # GUARDAR CAMBIOS
         self.conn.commit()
 
-    def cancelar_reserva(self, id_reserva):
+    def cancelar_reserva(self, reserva_id):
 
-        self.actualizar_estado(
-            id_reserva,
-            "CANCELADA"
-        )
+        # OBTENER DATOS DE LA RESERVA
+        self.cursor.execute("""
+            SELECT
+                prestador_id,
+                fecha,
+                hora
+            FROM reservas
+            WHERE id = ?
+        """, (reserva_id,))
+
+        datos = self.cursor.fetchone()
+
+        if datos:
+
+            prestador_id = datos[0]
+            fecha = datos[1]
+            hora = datos[2]
+
+            # CAMBIAR ESTADO DE RESERVA
+            self.cursor.execute("""
+                UPDATE reservas
+                SET estado = 'CANCELADA'
+                WHERE id = ?
+            """, (reserva_id,))
+
+            # LIBERAR HORARIO
+            from dao.horarios_base_prestadores_dao import marcar_disponible
+
+            marcar_disponible(
+                prestador_id,
+                fecha,
+                hora
+            )
+
+            self.conn.commit()
+
+            print(
+                "RESERVA CANCELADA Y HORARIO LIBERADO"
+            )
 
     # GUARDAR CALIFICACION
     def guardar_calificacion(

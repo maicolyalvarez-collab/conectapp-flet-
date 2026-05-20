@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import flet as ft
+from dao.horarios_base_prestadores_dao import marcar_disponible
 from dao.reservas_dao import ReservasDAO
 
 
@@ -206,16 +209,29 @@ class GestionarReservaView:
 
         dialog = ft.AlertDialog()
 
-        # ACEPTAR
-
         def aceptar(e):
 
-            self.manager.cancelar_reserva(
-                reserva.id
+            fecha_obj = datetime.strptime(reserva.fecha, "%Y-%m-%d")
+
+            dias = [
+                "lunes", "martes", "miercoles",
+                "jueves", "viernes"
+            ]
+
+            dia_semana = dias[fecha_obj.weekday()]
+
+            prestador_id = reserva.prestador_id
+            hora = reserva.hora
+
+            marcar_disponible(
+                prestador_id,
+                dia_semana,
+                hora
             )
 
-            dialog.open = False
+            self.manager.cancelar_reserva(reserva.id)
 
+            dialog.open = False
             self.page.update()
 
             self.mostrar_mensaje(
@@ -224,7 +240,6 @@ class GestionarReservaView:
 
             self.recargar()
 
-        # CANCELAR
 
         def cancelar(e):
 
@@ -255,8 +270,6 @@ class GestionarReservaView:
         dialog.open = True
 
         self.page.update()
-
-    # TARJETA RESERVA
 
     def tarjeta_reserva(self, reserva):
 
@@ -384,7 +397,6 @@ class GestionarReservaView:
         )
 
     # BUILD
-
     def build(self):
 
         if not hasattr(self.page, "usuario_actual"):

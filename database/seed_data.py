@@ -1,3 +1,4 @@
+from models.usuario import Usuario
 from services.usuario_service import UsuarioService
 from dao.horarios_base_prestadores_dao import crear_horarios_base
 
@@ -46,7 +47,7 @@ class SeedData:
 
             try:
 
-                self.service.crear_usuario(
+                usuario = Usuario(
                     nombre,
                     email,
                     password,
@@ -54,21 +55,20 @@ class SeedData:
                     tipo_servicio
                 )
 
+                usuario_id = self.usuario_dao.crear(usuario)
+
                 print(f"Usuario creado: {email}")
 
-                # SI ES EMPLEADO
+                #usuario_db = self.usuario_dao.buscar_por_email(email)
+
+                if usuario_id is None:
+
+                    print(f"❌ No se encontró usuario: {email}")
+                    continue
+
                 if rol == "empleado":
-
-                    usuario = (
-                        self.usuario_dao
-                        .buscar_por_email(email)
-                    )
-
-                    crear_horarios_base(usuario.id)
-
-                    print(
-                        f"Horarios creados para: {nombre}"
-                    )
+                    crear_horarios_base(usuario_id)
+                    print(f"Horarios creados para: {nombre}")
 
             except Exception as e :
                 

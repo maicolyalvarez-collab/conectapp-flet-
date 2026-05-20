@@ -1,92 +1,218 @@
 from database.conexion import ConexionDB
-
+from datetime import datetime, timedelta
 
 def crear_horarios_base(prestador_id):
 
     conn = ConexionDB.get_conexion()
     cursor = conn.cursor()
 
-    #evita horarios duplicados  
-    cursor.execute("""
-    SELECT COUNT(*) 
-    FROM horarios_base_empleados
-    WHERE prestador_id = ?
-    """, (prestador_id,))
+    try:
 
-    if cursor.fetchone()[0] > 0:
-        conn.close()
-        return 
+        # <-- MODIFICAR AQUÍ
+        # ELIMINAR HORARIOS ANTERIORES
+        cursor.execute("""
+        DELETE FROM horarios_base_empleados
+        WHERE prestador_id = ?
+        """, (prestador_id,))
 
-    dias = [
-        "lunes",
-        "martes",
-        "miercoles",
-        "jueves",
-        "viernes"
-    ]
+        dias = [
+            "lunes",
+            "martes",
+            "miercoles",
+            "jueves",
+            "viernes"
+        ]
 
-    horas = [
-        "09:00 AM",
-        "02:00 PM"
-    ]
+        horas = [
+            "09:00",
+            "14:00"
+        ]
 
-    for dia in dias:
-        for hora in horas:
+        # <-- MODIFICAR AQUÍ
+        # CREAR FECHAS REALES
+        hoy = datetime.now()
 
-            try:
+        # <-- MODIFICAR AQUÍ
+        # GENERAR 30 DIAS
+        for i in range(30):
+
+            fecha_obj = hoy + timedelta(days=i)
+
+            # 0=lunes 6=domingo
+            weekday = fecha_obj.weekday()
+
+            # <-- MODIFICAR AQUÍ
+            # IGNORAR SABADO Y DOMINGO
+            if weekday > 4:
+                continue
+
+            dia = dias[weekday]
+
+            # <-- MODIFICAR AQUÍ
+            # FORMATO YYYY-MM-DD
+            fecha_str = fecha_obj.strftime("%Y-%m-%d")
+
+            for hora in horas:
+
                 cursor.execute("""
                     INSERT INTO horarios_base_empleados (
                         prestador_id,
                         dia_semana,
-                        hora
+                        fecha,
+                        hora,
+                        estado
                     )
-                    VALUES (?, ?, ?)
-                """, (prestador_id, dia, hora))
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    prestador_id,
+                    dia,
+                    fecha_str,  # <-- MODIFICAR AQUÍ
+                    hora,
+                    "DISPONIBLE"
+                ))
 
-            except:
-                # si ya existe, lo ignoras
-                pass
+                print(
+                    f"INSERT OK -> "
+                    f"{prestador_id} "
+                    f"{fecha_str} "
+                    f"{dia} "
+                    f"{hora}"
+                )
 
-    conn.commit()
+        conn.commit()
 
-def obtener_horarios_disponibles(
+    except Exception as e:
+
+        conn.rollback()
+
+        print(
+            "ERROR EN HORARIOS:",
+            e
+        )
+
+def marcar_ocupado(
     prestador_id,
     fecha,
-    dia_semana
+    hora
 ):
 
     conn = ConexionDB.get_conexion()
     cursor = conn.cursor()
 
-    # HORARIOS BASE
     cursor.execute("""
-    SELECT hora
+        UPDATE horarios_base_empleados
+        SET estado = 'OCUPADO'
+
+        WHERE prestador_id = ?
+        AND fecha = ?
+        AND hora = ?
+    """, (
+        prestador_id,
+        fecha,
+        hora
+    ))
+
+    print(
+        "FILAS ACTUALIZADAS:",
+        cursor.rowcount
+    )
+        # <-- AGREGAR AQUÍ
+    # MOSTRAR DATOS REALES EN BD
+    cursor.execute("""
+        SELECT
+            prestador_id,
+            fecha,
+            hora,
+            estado
+
+        FROM horarios_base_empleados
+
+        WHERE prestador_id = ?
+    """, (prestador_id,))
+
+    print(
+        "DATOS BD:",
+        cursor.fetchall()
+    )
+
+    conn.commit()
+
+    print(
+        "HORARIO OCUPADO:",
+        prestador_id,
+        fecha,
+        hora
+    )
+
+def marcar_disponible(
+    prestador_id,
+    fecha,
+    hora
+):
+
+    conn = ConexionDB.get_conexion()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE horarios_base_empleados
+        SET estado = 'DISPONIBLE'
+
+        WHERE prestador_id = ?
+        AND fecha = ?
+        AND hora = ?
+    """, (
+        prestador_id,
+        fecha,
+        hora
+    ))
+
+    conn.commit()
+
+    print(
+        "HORARIO DISPONIBLE:",
+        prestador_id,
+        fecha,
+        hora
+    )
+
+def obtener_horarios_disponibles(
+    prestador_id,
+    fecha
+):
+
+    conn = ConexionDB.get_conexion()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT DISTINCT hora, estado
     FROM horarios_base_empleados
 
     WHERE prestador_id = ?
-    AND dia_semana = ?
+    AND fecha = ?
     """, (
         prestador_id,
-        dia_semana
+        fecha
     ))
 
     horarios = cursor.fetchall()
 
-    # HORARIOS OCUPADOS
     cursor.execute("""
     SELECT hora
     FROM reservas
 
     WHERE prestador_id = ?
     AND fecha = ?
-    AND estado = 'CONFIRMADA'
+    AND estado IN (
+                'CONFIRMADA', 
+                'FINALIZADA'
+    )
     """, (
         prestador_id,
         fecha
     ))
 
     reservas = cursor.fetchall()
-
 
     horas_ocupadas = [
         reserva[0]
@@ -99,13 +225,21 @@ def obtener_horarios_disponibles(
 
         hora = horario[0]
 
-        disponible = hora not in horas_ocupadas
+        estado_bd = horario[1]
+
+        disponible = (
+            estado_bd == "DISPONIBLE"
+            and hora not in horas_ocupadas
+        )
 
         resultado.append({
 
             "hora": hora,
 
-            "disponible": disponible
+            "estado":
+                "DISPONIBLE"
+                if disponible
+                else "OCUPADO"
 
         })
 

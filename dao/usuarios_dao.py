@@ -64,7 +64,11 @@ class UsuariosDAO:
                 usuario.tipo_servicio
             ))
 
+            usuario_id = cursor.lastrowid
+
             conn.commit()
+
+            return usuario_id
 
         except Exception as e:
 
