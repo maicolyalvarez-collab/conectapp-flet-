@@ -388,7 +388,7 @@ class HomeClienteView:
 
                     ft.Container(height=5),
 
-                    ft.ElevatedButton(
+                    ft.Button(
 
                         "Entrar",
 
@@ -554,7 +554,7 @@ class HomeClienteView:
                                 color="#9CA3AF"
                             ),
 
-                            ft.ElevatedButton(
+                            ft.Button(
 
                                 "Reservar ahora",
 

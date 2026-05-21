@@ -12,7 +12,6 @@ def login_view(page: ft.Page):
     page.clean()
     page.bgcolor = "#000205"
 
-    # ---------------- CAMPOS ----------------
     user_input = ft.TextField(
         hint_text="Correo Electrónico",
         width=280
@@ -26,14 +25,10 @@ def login_view(page: ft.Page):
 
     error_text = ft.Text("", color="red")
 
-    # ---------------- LOGIN ----------------
     def login_click(e):
 
         email = user_input.value
         password = pass_input.value
-
-        print("EMAIL:", email)
-        print("PASSWORD:", password)
 
         usuario = auth_service.login(email, password)
 
@@ -49,7 +44,6 @@ def login_view(page: ft.Page):
         page.clean()
         
 
-        # ---------------- REDIRECCIÓN POR ROL ----------------
         if usuario.rol == "admin":
             from view.admin.home_admin_view import HomeAdminView
             page.add(HomeAdminView(page, usuario).build())
@@ -64,7 +58,6 @@ def login_view(page: ft.Page):
 
         page.update()
 
-    # ---------------- UI ----------------
     page.add(
         ft.Container(
             ft.Column(
@@ -74,12 +67,6 @@ def login_view(page: ft.Page):
                         size=30,
                         weight="bold",
                         color="white"
-                    ),
-
-                    ft.Text(
-                        "admin / admin123 (prueba)",
-                        size=12,
-                        color="white70"
                     ),
 
                     user_input,

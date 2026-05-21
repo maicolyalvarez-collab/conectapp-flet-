@@ -13,8 +13,6 @@ class GestionarReservaView:
         self.usuario_actual = usuario_actual
         self.manager = ReservasDAO()
 
-    # MENSAJE EMERGENTE
-
     def mostrar_mensaje(self, texto):
 
         self.page.snack_bar = ft.SnackBar(
@@ -26,7 +24,6 @@ class GestionarReservaView:
         self.page.snack_bar.open = True
         self.page.update()
 
-    # RECARGAR VISTA
 
     def recargar(self):
 
@@ -34,7 +31,6 @@ class GestionarReservaView:
         self.page.add(self.build())
         self.page.update()
 
-    # FINALIZAR RESERVA
 
     def finalizar_reserva(self, reserva):
 
@@ -51,14 +47,12 @@ class GestionarReservaView:
 
         self.recargar()
 
-    # ABRIR CALIFICACIÓN
 
     def abrir_calificacion(self, reserva):
 
         self.rating = 0
         self.estrellas = []
 
-        # SELECCIONAR ESTRELLAS
 
         def seleccionar_estrella(index):
 
@@ -74,7 +68,6 @@ class GestionarReservaView:
 
             self.page.update()
 
-        # CREAR ESTRELLAS
 
         for i in range(5):
 
@@ -91,7 +84,6 @@ class GestionarReservaView:
 
             self.estrellas.append(estrella)
 
-        # FILA ESTRELLAS
 
         self.row_estrellas = ft.Row(
 
@@ -100,13 +92,11 @@ class GestionarReservaView:
             spacing=5
         )
 
-        # CAMPO COMENTARIO
 
         self.comentario = ft.TextField(
             label="Comentario"
         )
 
-        # DIALOGO
 
         dialog = ft.AlertDialog(
 
@@ -146,7 +136,6 @@ class GestionarReservaView:
 
         self.page.update()
 
-    # GUARDAR CALIFICACIÓN
 
     def guardar_calificacion(self, reserva):
 
@@ -161,7 +150,6 @@ class GestionarReservaView:
 
             return
 
-        # GUARDAR EN BD
 
         self.manager.guardar_calificacion(
 
@@ -170,17 +158,12 @@ class GestionarReservaView:
             self.comentario.value
         )
 
-        # MARCAR CALIFICADA
-
         reserva.calificada = True
-
-        # MENSAJE
 
         self.mostrar_mensaje(
             "Gracias por tu reseña :)"
         )
 
-        # CERRAR DIALOGO
 
         for d in self.page.overlay:
 
@@ -191,8 +174,6 @@ class GestionarReservaView:
         self.page.update()
 
         self.recargar()
-
-    # VOLVER
 
     def volver(self, e):
 
@@ -209,7 +190,7 @@ class GestionarReservaView:
 
         self.page.update()
 
-    # CANCELAR RESERVA
+
 
     def confirmar_cancelacion(self, reserva):
 
@@ -283,8 +264,6 @@ class GestionarReservaView:
 
         botones = []
 
-        # COLORES ESTADO
-
         color_estado = {
 
             "CONFIRMADA": "#38bdf8",
@@ -293,7 +272,6 @@ class GestionarReservaView:
 
         }.get(estado, "white")
 
-        # FINALIZAR
 
         if estado == "CONFIRMADA":
 
@@ -308,9 +286,8 @@ class GestionarReservaView:
                 )
             )
 
-        # CALIFICAR
 
-        if estado == "COMPLETADA" and reserva.calificada == "NO CALIFICADA":
+        if estado == "FINALIZADA" and reserva.calificada == "NO CALIFICADA":
 
             botones.append(
                 ft.TextButton(
@@ -319,7 +296,6 @@ class GestionarReservaView:
                 )
             )
 
-        #Calificado
         if reserva.calificada == "CALIFICADA":
 
             botones.append(
@@ -338,7 +314,7 @@ class GestionarReservaView:
             content=ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 controls=[
-                    # INFO RESERVA
+
                     ft.Column(
                         spacing=5,
                         controls=[
@@ -380,7 +356,6 @@ class GestionarReservaView:
                         ]
                     ),
 
-                    # BOTONES
                     ft.Column(
                         horizontal_alignment=ft.CrossAxisAlignment.END,
                         controls=
@@ -402,7 +377,6 @@ class GestionarReservaView:
             )
         )
 
-    # BUILD
     def build(self):
 
         if not hasattr(self.page, "usuario_actual"):
