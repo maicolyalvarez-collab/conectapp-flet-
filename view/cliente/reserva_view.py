@@ -1162,18 +1162,43 @@ class ReservaView:
 
         contenido = pasos[self.paso]()
 
-
         return ft.Container(
-            content=ft.Column(
-                [
-                    self.line(),
-                    contenido
-                ],
-                spacing=40,
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER
-            ),
+
             expand=True,
-            bgcolor="#121212",
-            padding=40
+
+            bgcolor="#070B14",
+
+            padding=40,
+
+            content=ft.Container(
+
+                width=1200,
+
+                padding=40,
+
+                border_radius=30,
+
+                bgcolor="#0B1120",
+
+                shadow=ft.BoxShadow(
+                    blur_radius=30,
+                    spread_radius=1,
+                    color="#00000055",
+                    offset=ft.Offset(0, 8)
+                ),
+
+                content=ft.Column(
+
+                    [
+                        self.line(),
+                        contenido
+                    ],
+
+                    spacing=40,
+
+                    alignment=ft.MainAxisAlignment.CENTER,
+
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                )
+            )
         )
