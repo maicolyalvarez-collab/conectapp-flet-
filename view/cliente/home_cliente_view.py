@@ -11,7 +11,6 @@ class HomeClienteView:
         self.controller = HomeClienteController(page)
         self.menu = None
 
-    # ================= CAMBIAR VISTA =================
 
     def cambiar_menu(self, vista):
 
@@ -19,7 +18,6 @@ class HomeClienteView:
         self.page.add(vista)
         self.page.update()
 
-    # ================= MENU LATERAL =================
 
     def abrir_menu(self, e):
 
@@ -40,7 +38,6 @@ class HomeClienteView:
 
                 controls=[
 
-                    # ===== LOGO =====
 
                     ft.Image(
                         src="logo.png",
@@ -57,7 +54,6 @@ class HomeClienteView:
 
                     ft.Divider(color="white24"),
 
-                    # ===== CERRAR =====
 
                     ft.Container(
 
@@ -78,7 +74,6 @@ class HomeClienteView:
                         )
                     ),
 
-                    # ===== OPCIONES =====
 
                     ft.ListTile(
 
@@ -178,8 +173,6 @@ class HomeClienteView:
 
             self.page.update()
 
-    # ================= TOPBAR =================
-
     def build_topbar(self):
 
         nombre = getattr(
@@ -223,8 +216,6 @@ class HomeClienteView:
             ]
         )
 
-    # ================= NAVEGACION =================
-
     def ir_reservar(self, e):
 
         from view.cliente.reserva_view import ReservaView
@@ -246,8 +237,6 @@ class HomeClienteView:
                 self.usuario_actual
             ).build()
         )
-
-    # ================= NOTIFICACIONES =================
 
     def cerrar_dialogo(self, dialog):
 
@@ -328,7 +317,6 @@ class HomeClienteView:
 
         self.page.update()
 
-    # ================= CARDS PRINCIPALES =================
 
     def crear_card(
         self,
@@ -422,7 +410,6 @@ class HomeClienteView:
             )
         )
 
-    # ================= INFO CARD =================
 
     def info_card(self, icono, titulo, descripcion):
 
@@ -484,13 +471,10 @@ class HomeClienteView:
             )
         )
 
-    # ================= BUILD =================
 
     def build(self):
 
         self.page.bgcolor = "#070B14"
-
-        # ===== CARDS INFORMATIVAS =====
 
         info_cards = ft.Row(
 
@@ -526,7 +510,6 @@ class HomeClienteView:
             ]
         )
 
-        # ===== HERO SECTION =====
 
         hero = ft.Container(
 
@@ -607,7 +590,6 @@ class HomeClienteView:
             )
         )
 
-        # ===== CONTENIDO PRINCIPAL =====
 
         contenido = ft.Column(
 
